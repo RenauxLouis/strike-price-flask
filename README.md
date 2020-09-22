@@ -2,7 +2,7 @@
 Flask app sending mails when strike price is reached
 
 To setup:
-- Run `server_strike_price_db.py` to allow curling to the app for adding tickers with the following curl commands:
+- Run `python3 server_strike_price_db.py` to allow curling to the app for adding tickers with the following curl commands:
 ```
 curl --header "Content-Type: application/json" --request GET http://<your_url>:8080/is_alive
 curl --header "Content-Type: application/json" --request GET http://<your_url>:8080/read_db
