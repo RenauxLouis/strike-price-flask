@@ -11,15 +11,6 @@ from constants import CSV_FPATH
 app = Flask(__name__)
 
 
-def add_tickers_to_db(tickers_to_add, df):
-
-    if tickers_to_add:
-        for ticker in tickers_to_add:
-            add_one_ticker_to_db(ticker, df)
-
-    return df
-
-
 def add_one_ticker_to_db(ticker, strike_price, df):
 
     if ticker in df["ticker"].values:
