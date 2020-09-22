@@ -59,7 +59,6 @@ def remove_tickers_db(tickers_to_remove, df):
 
 
 def compare_current_to_strike_prices(sender_email, sender_password):
-    print(sender_email, sender_password)
     df = pd.read_csv(CSV_FPATH)
     tickers_to_remove = []
     for ticker, strike_price in zip(df["ticker"], df["strike_price"]):
