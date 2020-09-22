@@ -8,27 +8,26 @@ import pandas as pd
 from constants import CSV_FPATH
 from yahoo_fin import stock_info
 
-SENDER_EMAIL = os.environ.get("MAIL_USERNAME")
-SENDER_PASSWORD = os.environ.get("MAIL_PASSWORD")
-
 
 def create_secure_connection_and_send_mail(ticker, most_recent_price,
-                                           strike_price):
+                                           strike_price, sender_email,
+                                           sender_password):
     print("In create secure connection")
     port = 465
     context = ssl.create_default_context()
     with smtplib.SMTP_SSL("smtp.gmail.com", port, context=context) as server:
-        server.login(SENDER_EMAIL, SENDER_PASSWORD)
-        send_mail(ticker, most_recent_price, strike_price, server)
+        server.login(sender_email, sender_password)
+        send_mail(ticker, most_recent_price,
+                  strike_price, server, sender_email)
 
 
-def send_mail(ticker, most_recent_price, strike_price, server):
+def send_mail(ticker, most_recent_price, strike_price, server, sender_email):
     print("In send mail")
     receiver_email = "renauxlouis@gmail.com"
 
     message = MIMEMultipart("alternative")
     message["Subject"] = f"STRIKE PRICE {ticker.upper()}"
-    message["From"] = SENDER_EMAIL
+    message["From"] = sender_email
     message["To"] = receiver_email
 
     text = """\
@@ -49,7 +48,7 @@ def send_mail(ticker, most_recent_price, strike_price, server):
     message.attach(part1)
     message.attach(part2)
 
-    server.sendmail(SENDER_EMAIL, receiver_email, message.as_string())
+    server.sendmail(sender_email, receiver_email, message.as_string())
 
 
 def remove_tickers_db(tickers_to_remove, df):
@@ -60,7 +59,7 @@ def remove_tickers_db(tickers_to_remove, df):
     df.to_csv(CSV_FPATH, index=False)
 
 
-def compare_current_to_strike_prices():
+def compare_current_to_strike_prices(sender_email, sender_password):
     df = pd.read_csv(CSV_FPATH)
     tickers_to_remove = []
     for ticker, strike_price in zip(df["ticker"], df["strike_price"]):
@@ -68,7 +67,8 @@ def compare_current_to_strike_prices():
         print(ticker, strike_price, most_recent_price)
         if most_recent_price < strike_price:
             create_secure_connection_and_send_mail(
-                ticker, most_recent_price, strike_price)
+                ticker, most_recent_price, strike_price, sender_email,
+                sender_password)
             tickers_to_remove.append(ticker)
 
     remove_tickers_db(tickers_to_remove, df)
