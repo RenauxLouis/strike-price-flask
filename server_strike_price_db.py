@@ -5,7 +5,6 @@ from flask import Flask, Response, request
 from waitress import serve
 
 from utils import get_current_date_time_as_prefix
-
 from constants import CSV_FPATH
 
 app = Flask(__name__)
