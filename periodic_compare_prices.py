@@ -6,22 +6,10 @@ from email.mime.text import MIMEText
 
 import pandas as pd
 from constants import CSV_FPATH
-from flask import Blueprint, Flask
 from yahoo_fin import stock_info
 
 SENDER_EMAIL = os.environ.get("MAIL_USERNAME")
 SENDER_PASSWORD = os.environ.get("MAIL_PASSWORD")
-
-app = Flask(__name__)
-strikebp = Blueprint("strike", __name__)
-
-
-@strikebp.cli.command("strike_price_compare")
-def create():
-    compare_current_to_strike_prices()
-
-
-app.register_blueprint(strikebp)
 
 
 def create_secure_connection_and_send_mail(ticker, most_recent_price,
