@@ -11,5 +11,5 @@ curl --header "Content-Type: application/json" --request GET http://<your_url>:8
 ```
 - Run a `cronjob -e` with the following content to run `periodic_compare_prices.py` every minute each weekday between 13h to 20h UTC (corresponding to 9h to 16h EST, verify that the instance setup uses UTC):
 ```
-* 13-20 * * 1-5 /home/ubuntu/workspace/investing/cron_job.sh
+* 13-20 * * 1-5 /home/ubuntu/workspace/strike-price-flask/cron_job.sh
 ```
