@@ -37,7 +37,7 @@ def send_mail(ticker, most_recent_price, strike_price, server, sender_email):
     html = f"""\
     <html>
     <body>
-        <p> Today's closing price on '{ticker}' was ${int(round(most_recent_price, 0))} which is below the strike price you set at ${strike_price}
+        <p> Today's closing price on '{ticker}' was ${int(round(most_recent_price, 2))} which is below the strike price you set at ${strike_price}
         </p>
     </body>
     </html>
