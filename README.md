@@ -16,5 +16,5 @@ chmod 775 cron_job.sh
 ```
 - Run a `cronjob -e` with the following content to run `periodic_compare_prices.py` every minute each weekday between 13h to 22h UTC or 9h to 18h EST:
 ```
- * 9-18 * * 1-5 /Users/louisrenaux/strike-price-flask/cron_job.sh
+* 9-17 * * 1-5 /Users/louisrenaux/strike-price-flask/cron_job.sh
 ```
