@@ -1,3 +1,4 @@
+import math
 import os
 import smtplib
 import ssl
@@ -8,11 +9,24 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
 import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 import yfinance as yf
+from matplotlib import rc
+from PIL import Image
 from yahoo_fin import stock_info
 
 from constants import CSV_FPATH
+
+
+def compress_image(fpath_image):
+
+    img = Image.open(fpath_image)
+    img = img.convert("RGB")
+    fpath_image_compressed = fpath_image.replace(".png", ".jpg")
+    img.save(fpath_image_compressed, optimize=True, quality=95)
+
+    return fpath_image_compressed
 
 
 def get_closing_price_past_year(ticker):
@@ -20,16 +34,35 @@ def get_closing_price_past_year(ticker):
     today = date.today()
     a_year_ago = date.today() - timedelta(days=365)
     df = yf.download(ticker, start=a_year_ago, end=today)
-    return = df["Close"]
+    return df["Close"]
 
 
-def plot_price_history(ticker, closing_prices, tmpdirpath):
+def plot_price_history(ticker, closing_prices, strike_price, tmpdirpath):
+
+    font = {"weight": "bold",
+            "size": 22}
+    rc("font", **font)
 
     fig, ax = plt.subplots(figsize=(16, 9))
-    ax.plot(closing_prices.index, closing_prices, label=ticker)
-    ax.set_xlabel("Date")
-    ax.set_ylabel("Closing price ($)")
+    ax.plot(closing_prices.index, closing_prices,
+            label=ticker, color="#006699", alpha=0.8)
+    ax.plot(closing_prices.index, [strike_price]*len(closing_prices),
+            color="#CC3333", label="STRIKE PRICE", ls="--", lw=2, alpha=0.8)
+    ax.set_ylabel("PRICE - $", font=font)
+
+    n_ticks = 10
+    max_val = closing_prices.max()
+    min_val = closing_prices.min()
+    start_yticks = int(math.floor(min_val / 10.0)) * 10
+    end_yticks = int(math.ceil(max_val / 10.0)) * 10
+    range_ticks = end_yticks - start_yticks
+    step = range_ticks/n_ticks
+    yticks = np.arange(start_yticks, end_yticks+step, step)
+    plt.yticks(yticks)
+
     ax.legend()
+    plt.grid(alpha=0.25)
+    fig.tight_layout()
 
     fpath_image = os.path.join(tmpdirpath, "plot.png")
     fig.savefig(fpath_image)
@@ -41,7 +74,7 @@ def plot_price_history(ticker, closing_prices, tmpdirpath):
 def create_secure_connection_and_send_mail(ticker, most_recent_price,
                                            strike_price, sender_email,
                                            sender_password, fpath_image):
-    print("In create secure connection")
+
     port = 465
     context = ssl.create_default_context()
     with smtplib.SMTP_SSL("smtp.gmail.com", port, context=context) as server:
@@ -52,50 +85,35 @@ def create_secure_connection_and_send_mail(ticker, most_recent_price,
 
 def send_mail(ticker, most_recent_price, strike_price, server, sender_email,
               fpath_image):
-    print("In send mail")
-    receiver_email = "renauxlouis@gmail.com"
 
-    msgRoot = MIMEMultipart("alternative")
-    msgRoot["Subject"] = f"STRIKE PRICE {ticker.upper()}"
-    msgRoot["From"] = sender_email
-    msgRoot["To"] = receiver_email
-    msgRoot.preamble = "This is a multi-part message in MIME format."
+    title = f"{ticker} STRIKE PRICE REACHED"
+    subtitle = f"Today's closing price on the ticker {ticker} was ${round(most_recent_price, 2)} which is below the strike price you set at ${strike_price}"
 
-    msgAlternative = MIMEMultipart('alternative')
-    msgRoot.attach(msgAlternative)
+    receiver_email = "louis.renaux.2@hotmail.com"
+    # receiver_email = "renauxlouis@gmail.com"
+    msg_root = MIMEMultipart("alternative")
+    msg_root["Subject"] = title
+    msg_root["From"] = sender_email
+    msg_root["To"] = receiver_email
+    msg_root.preamble = title
 
-    text = "Alternative text if no html"
+    msg_alternative = MIMEMultipart("alternative")
+    msg_root.attach(msg_alternative)
 
-    msgText = MIMEText(text, "plain")
-    msgAlternative.attach(msgText)
+    msg_text = MIMEText(subtitle, "plain")
+    msg_alternative.attach(msg_text)
 
     with open("mail_format.html") as fi:
         html = fi.read()
-    # html = f"""\
-    # <html>
-    # <body>
-    #     <p> Today's closing price on '{ticker}' was ${int(round(most_recent_price, 2))} which is below the strike price you set at ${strike_price}
-    #     </p>
-    # </body>
-    # </html>
-    # """
-    msgText = MIMEText(html, "html")
-    msgAlternative.attach(msgText)
+    msg_text = MIMEText(html.format(title=title, subtitle=subtitle), "html")
+    msg_alternative.attach(msg_text)
 
-    # part1 = MIMEText(text, "plain")
-    # part2 = MIMEText(html, "html")
-    # message.attach(part1)
-    # message.attach(part2)
-
-    # Adds the image
     with open(fpath_image, "rb") as img_data:
-        msgImage = MIMEImage(img_data.read())
+        msg_image = MIMEImage(img_data.read())
+    msg_image.add_header("Content-ID", "<image1>")
+    msg_root.attach(msg_image)
 
-    # Define the image's ID as referenced above
-    msgImage.add_header('Content-ID', '<image1>')
-    msgRoot.attach(msgImage)
-
-    server.sendmail(sender_email, receiver_email, msgRoot.as_string())
+    server.sendmail(sender_email, receiver_email, msg_root.as_string())
 
 
 def remove_tickers_db(tickers_to_remove, df):
@@ -104,6 +122,17 @@ def remove_tickers_db(tickers_to_remove, df):
     assert len(df) + len(tickers_to_remove) == len_df_before_removal
 
     df.to_csv(CSV_FPATH, index=False)
+
+
+def create_mail_and_send(ticker, strike_price, most_recent_price, tmpdirpath,
+                         sender_email, sender_password):
+    closing_prices = get_closing_price_past_year(ticker)
+    fpath_image = plot_price_history(
+        ticker, closing_prices, strike_price, tmpdirpath)
+    fpath_image_compressed = compress_image(fpath_image)
+    create_secure_connection_and_send_mail(
+        ticker, most_recent_price, strike_price, sender_email,
+        sender_password, fpath_image_compressed)
 
 
 def compare_current_to_strike_prices(sender_email, sender_password):
@@ -115,12 +144,9 @@ def compare_current_to_strike_prices(sender_email, sender_password):
             most_recent_price = stock_info.get_live_price(ticker)
             print(ticker, strike_price, most_recent_price)
             if most_recent_price < strike_price:
-                closing_prices = get_closing_price_past_year(ticker)
-                fpath_image = plot_price_history(
-                    ticker, closing_prices, tmpdirpath)
-                create_secure_connection_and_send_mail(
-                    ticker, most_recent_price, strike_price, sender_email,
-                    sender_password, fpath_image)
+                create_mail_and_send(
+                    ticker, strike_price, most_recent_price, tmpdirpath,
+                    sender_email, sender_password)
                 tickers_to_remove.append(ticker)
 
     # remove_tickers_db(tickers_to_remove, df)
