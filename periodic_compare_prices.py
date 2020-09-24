@@ -89,8 +89,7 @@ def send_mail(ticker, most_recent_price, strike_price, server, sender_email,
     title = f"{ticker} STRIKE PRICE REACHED"
     subtitle = f"Today's closing price on the ticker {ticker} was ${round(most_recent_price, 2)} which is below the strike price you set at ${strike_price}"
 
-    # receiver_email = "renauxlouis@gmail.com"
-    receiver_email = "huguesrenaux@hotmail.com"
+    receiver_email = "renauxlouis@gmail.com"
     msg_root = MIMEMultipart("alternative")
     msg_root["Subject"] = title
     msg_root["From"] = sender_email
