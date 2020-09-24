@@ -104,7 +104,6 @@ def send_mail(ticker, most_recent_price, strike_price, server, sender_email,
 
     with open("mail_format.html") as fi:
         html = fi.read()
-    # msg_text = MIMEText(html.format(title=title, subtitle=subtitle), "html")
     msg_text = MIMEText(html.format(title=title, subtitle=subtitle), "html")
     msg_alternative.attach(msg_text)
 
