@@ -6,6 +6,7 @@ from waitress import serve
 
 from utils import get_current_date_time_as_prefix
 from constants import CSV_FPATH
+from datetime import date
 
 app = Flask(__name__)
 
@@ -17,14 +18,17 @@ def add_one_ticker_to_db(ticker, strike_price, df):
         return Response(f"Ticker {ticker} already in the database",
                         status=401, mimetype="application/json")
 
+    today = date.today()
     df = df.append(
-        {"ticker": ticker, "strike_price": strike_price},
+        {"ticker": ticker, "strike_price": strike_price,
+            "strike_price_query_date": today},
         ignore_index=True)
 
     df.to_csv(CSV_FPATH, index=False)
 
-    return Response(json.dumps({"Success": f"Ticker {ticker} added to the db"}),
-                    status=200, mimetype="application/json")
+    return Response(json.dumps(
+        {"Success": f"Ticker {ticker} added to the db"}),
+        status=200, mimetype="application/json")
 
 
 @app.route("/is_alive", methods=["GET"])
@@ -35,25 +39,31 @@ def is_alive():
 @app.route("/read_db", methods=["GET"])
 def read_db():
     df = pd.read_csv(CSV_FPATH, index_col=False)
-    df_as_dict = dict(zip(df["ticker"], df["strike_price"]))
+
+    df["strike_price_with_date"] = df.apply(
+        lambda row: (row["strike_price"], row[
+            "strike_price_query_date"]), axis=1)
+    df_as_dict = dict(
+        zip(df["ticker"], df["strike_price_with_date"]))
     return Response(json.dumps(df_as_dict), status=200,
                     mimetype="application/json")
 
 
-@app.route("/reset_db", methods=["GET"])
+@ app.route("/reset_db", methods=["GET"])
 def reset_db():
     time_now = get_current_date_time_as_prefix()
     saved_db_folder = "saved_db"
     os.makedirs(saved_db_folder, exist_ok=True)
     os.rename(CSV_FPATH, os.path.join(saved_db_folder, time_now + CSV_FPATH))
-    df_empty = pd.DataFrame({"ticker": [], "strike_price": []})
+    df_empty = pd.DataFrame(
+        {"ticker": [], "strike_price": [], "strike_price_query_date": []})
     df_empty.to_csv(CSV_FPATH, index=False)
 
     return Response(json.dumps({"Success": "Database reset"}), status=200,
                     mimetype="application/json")
 
 
-@app.route("/add_ticker", methods=["POST"])
+@ app.route("/add_ticker", methods=["POST"])
 def infer():
     try:
 

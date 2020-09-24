@@ -3,7 +3,7 @@ import os
 import smtplib
 import ssl
 import tempfile
-from datetime import date, timedelta
+from datetime import date, timedelta, datetime
 from email.mime.image import MIMEImage
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
@@ -37,7 +37,8 @@ def get_closing_price_past_year(ticker):
     return df["Close"]
 
 
-def plot_price_history(ticker, closing_prices, strike_price, tmpdirpath):
+def plot_price_history(ticker, closing_prices, strike_price, tmpdirpath,
+                       strike_price_query_date):
 
     font = {"weight": "bold",
             "size": 22}
@@ -46,7 +47,20 @@ def plot_price_history(ticker, closing_prices, strike_price, tmpdirpath):
     fig, ax = plt.subplots(figsize=(16, 9))
     ax.plot(closing_prices.index, closing_prices,
             label=ticker, color="#000000")
-    ax.plot(closing_prices.index, [strike_price]*len(closing_prices),
+
+    strike_price_query_datetime = datetime.strptime(
+        strike_price_query_date, "%Y-%m-%d")
+    print(strike_price_query_datetime)
+    strike_price_query_date_slice = strike_price_query_datetime - \
+        timedelta(days=300)
+    strike_price_query_date_slice_str = str(
+        strike_price_query_date_slice).split(" ")[0]
+    print(strike_price_query_date_slice_str)
+    idx = pd.IndexSlice
+    print(closing_prices.index)
+    strike_price_dates = closing_prices.loc[idx[strike_price_query_date_slice_str:]]
+    ax.plot(strike_price_dates,
+            [strike_price]*len(strike_price_dates),
             color="#CC3333", label="STRIKE PRICE", ls="--", lw=2)
     ax.set_ylabel("PRICE - $", font=font)
 
@@ -66,6 +80,7 @@ def plot_price_history(ticker, closing_prices, strike_price, tmpdirpath):
 
     fpath_image = os.path.join(tmpdirpath, "plot.png")
     fig.savefig(fpath_image)
+    plt.show()
     plt.close()
 
     return fpath_image
@@ -87,7 +102,7 @@ def send_mail(ticker, most_recent_price, strike_price, server, sender_email,
               fpath_image):
 
     title = f"{ticker} STRIKE PRICE REACHED"
-    subtitle = f"Today's closing price on the ticker {ticker} was ${round(most_recent_price, 2)} which is below the strike price you set at ${strike_price}"
+    subtitle = f"{ticker} just reached ${round(most_recent_price, 2)} which is below the strike price you set at ${strike_price}"
 
     receiver_email = "renauxlouis@gmail.com"
     msg_root = MIMEMultipart("alternative")
@@ -124,10 +139,12 @@ def remove_tickers_db(tickers_to_remove, df):
 
 
 def create_mail_and_send(ticker, strike_price, most_recent_price, tmpdirpath,
-                         sender_email, sender_password):
+                         sender_email, sender_password,
+                         strike_price_query_date):
     closing_prices = get_closing_price_past_year(ticker)
     fpath_image = plot_price_history(
-        ticker, closing_prices, strike_price, tmpdirpath)
+        ticker, closing_prices, strike_price, tmpdirpath,
+        strike_price_query_date)
     fpath_image_compressed = compress_image(fpath_image)
     create_secure_connection_and_send_mail(
         ticker, most_recent_price, strike_price, sender_email,
@@ -139,13 +156,15 @@ def compare_current_to_strike_prices(sender_email, sender_password):
     tickers_to_remove = []
 
     with tempfile.TemporaryDirectory() as tmpdirpath:
-        for ticker, strike_price in zip(df["ticker"], df["strike_price"]):
+        for ticker, strike_price, strike_price_query_date in zip(
+                df["ticker"], df["strike_price"],
+                df["strike_price_query_date"]):
             most_recent_price = stock_info.get_live_price(ticker)
             print(ticker, strike_price, most_recent_price)
             if most_recent_price < strike_price:
                 create_mail_and_send(
                     ticker, strike_price, most_recent_price, tmpdirpath,
-                    sender_email, sender_password)
+                    sender_email, sender_password, strike_price_query_date)
                 tickers_to_remove.append(ticker)
 
     # remove_tickers_db(tickers_to_remove, df)
