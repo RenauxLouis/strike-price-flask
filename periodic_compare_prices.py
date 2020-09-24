@@ -45,9 +45,9 @@ def plot_price_history(ticker, closing_prices, strike_price, tmpdirpath):
 
     fig, ax = plt.subplots(figsize=(16, 9))
     ax.plot(closing_prices.index, closing_prices,
-            label=ticker, color="#006699", alpha=0.8)
+            label=ticker, color="#000000")
     ax.plot(closing_prices.index, [strike_price]*len(closing_prices),
-            color="#CC3333", label="STRIKE PRICE", ls="--", lw=2, alpha=0.8)
+            color="#CC3333", label="STRIKE PRICE", ls="--", lw=2)
     ax.set_ylabel("PRICE - $", font=font)
 
     n_ticks = 10
@@ -89,8 +89,8 @@ def send_mail(ticker, most_recent_price, strike_price, server, sender_email,
     title = f"{ticker} STRIKE PRICE REACHED"
     subtitle = f"Today's closing price on the ticker {ticker} was ${round(most_recent_price, 2)} which is below the strike price you set at ${strike_price}"
 
-    receiver_email = "louis.renaux.2@hotmail.com"
     # receiver_email = "renauxlouis@gmail.com"
+    receiver_email = "huguesrenaux@hotmail.com"
     msg_root = MIMEMultipart("alternative")
     msg_root["Subject"] = title
     msg_root["From"] = sender_email
@@ -105,6 +105,7 @@ def send_mail(ticker, most_recent_price, strike_price, server, sender_email,
 
     with open("mail_format.html") as fi:
         html = fi.read()
+    # msg_text = MIMEText(html.format(title=title, subtitle=subtitle), "html")
     msg_text = MIMEText(html.format(title=title, subtitle=subtitle), "html")
     msg_alternative.attach(msg_text)
 
