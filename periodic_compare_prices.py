@@ -3,7 +3,7 @@ import os
 import smtplib
 import ssl
 import tempfile
-from datetime import date, timedelta, datetime, time
+from datetime import date, timedelta, datetime
 from email.mime.image import MIMEImage
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
@@ -17,7 +17,7 @@ from PIL import Image
 from yahoo_fin import stock_info
 
 from constants import CSV_FPATH
-import sys
+import imgkit
 
 
 def compress_image(fpath_image):
@@ -106,6 +106,7 @@ def send_mail(ticker, most_recent_price, strike_price, server, sender_email,
     subtitle = f"{ticker} just reached ${round(most_recent_price, 2)} which is below the strike price you set at ${strike_price}"
 
     receiver_email = "renauxlouis@gmail.com"
+
     msg_root = MIMEMultipart("alternative")
     msg_root["Subject"] = title
     msg_root["From"] = sender_email
@@ -120,7 +121,9 @@ def send_mail(ticker, most_recent_price, strike_price, server, sender_email,
 
     with open("mail_format.html") as fi:
         html = fi.read()
-    msg_text = MIMEText(html.format(title=title, subtitle=subtitle), "html")
+    formated_html = html.format(title=title, subtitle=subtitle)
+
+    msg_text = MIMEText(formated_html, "html")
     msg_alternative.attach(msg_text)
 
     with open(fpath_image, "rb") as img_data:
