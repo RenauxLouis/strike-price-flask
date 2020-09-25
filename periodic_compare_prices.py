@@ -3,7 +3,7 @@ import os
 import smtplib
 import ssl
 import tempfile
-from datetime import date, timedelta, datetime
+from datetime import date, timedelta, datetime, time
 from email.mime.image import MIMEImage
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
@@ -17,6 +17,7 @@ from PIL import Image
 from yahoo_fin import stock_info
 
 from constants import CSV_FPATH
+import sys
 
 
 def compress_image(fpath_image):
@@ -29,11 +30,15 @@ def compress_image(fpath_image):
     return fpath_image_compressed
 
 
-def get_closing_price_past_year(ticker):
+def get_closing_price_past_year_min(ticker, strike_price_query_date):
 
+    strike_price_query_datetime = datetime.strptime(
+        strike_price_query_date, "%Y-%m-%d")
     today = date.today()
     a_year_ago = date.today() - timedelta(days=365)
-    df = yf.download(ticker, start=a_year_ago, end=today)
+    start_date = min(strike_price_query_datetime.date(), a_year_ago)
+
+    df = yf.download(ticker, start=start_date, end=today)
     return df["Close"]
 
 
@@ -50,18 +55,15 @@ def plot_price_history(ticker, closing_prices, strike_price, tmpdirpath,
 
     strike_price_query_datetime = datetime.strptime(
         strike_price_query_date, "%Y-%m-%d")
-    print(strike_price_query_datetime)
     strike_price_query_date_slice = strike_price_query_datetime - \
-        timedelta(days=300)
-    strike_price_query_date_slice_str = str(
-        strike_price_query_date_slice).split(" ")[0]
-    print(strike_price_query_date_slice_str)
-    idx = pd.IndexSlice
-    print(closing_prices.index)
-    strike_price_dates = closing_prices.loc[idx[strike_price_query_date_slice_str:]]
-    ax.plot(strike_price_dates,
-            [strike_price]*len(strike_price_dates),
+        timedelta(days=100)
+    today = date.today()
+    strike_price_x_axis = pd.date_range(start=strike_price_query_date_slice,
+                                        end=today)
+    ax.plot(strike_price_x_axis,
+            [strike_price]*len(strike_price_x_axis),
             color="#CC3333", label="STRIKE PRICE", ls="--", lw=2)
+
     ax.set_ylabel("PRICE - $", font=font)
 
     n_ticks = 10
@@ -80,7 +82,6 @@ def plot_price_history(ticker, closing_prices, strike_price, tmpdirpath,
 
     fpath_image = os.path.join(tmpdirpath, "plot.png")
     fig.savefig(fpath_image)
-    plt.show()
     plt.close()
 
     return fpath_image
@@ -141,7 +142,8 @@ def remove_tickers_db(tickers_to_remove, df):
 def create_mail_and_send(ticker, strike_price, most_recent_price, tmpdirpath,
                          sender_email, sender_password,
                          strike_price_query_date):
-    closing_prices = get_closing_price_past_year(ticker)
+    closing_prices = get_closing_price_past_year_min(
+        ticker, strike_price_query_date)
     fpath_image = plot_price_history(
         ticker, closing_prices, strike_price, tmpdirpath,
         strike_price_query_date)
