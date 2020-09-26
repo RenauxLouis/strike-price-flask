@@ -3,7 +3,7 @@ import os
 import smtplib
 import ssl
 import tempfile
-from datetime import date, timedelta, datetime
+from datetime import date, datetime, timedelta
 from email.mime.image import MIMEImage
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
@@ -17,7 +17,7 @@ from PIL import Image
 from yahoo_fin import stock_info
 
 from constants import CSV_FPATH
-import imgkit
+from ggsheet_parser import get_df_with_dates
 
 
 def compress_image(fpath_image):
@@ -157,7 +157,8 @@ def create_mail_and_send(ticker, strike_price, most_recent_price, tmpdirpath,
 
 
 def compare_current_to_strike_prices(sender_email, sender_password):
-    df = pd.read_csv(CSV_FPATH)
+
+    df = get_df_with_dates()
     tickers_to_remove = []
 
     with tempfile.TemporaryDirectory() as tmpdirpath:
