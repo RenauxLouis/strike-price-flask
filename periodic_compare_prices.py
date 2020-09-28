@@ -24,6 +24,7 @@ def compress_image(fpath_image):
 
     img = Image.open(fpath_image)
     img = img.convert("RGB")
+    assert os.path.splitext(fpath_image)[1] == ".png"
     fpath_image_compressed = fpath_image.replace(".png", ".jpg")
     img.save(fpath_image_compressed, optimize=True, quality=95)
 
@@ -37,7 +38,6 @@ def get_closing_price_past_year_min(ticker, strike_price_query_date):
     today = date.today()
     a_year_ago = date.today() - timedelta(days=365)
     start_date = min(strike_price_query_datetime.date(), a_year_ago)
-
     df = yf.download(ticker, start=start_date, end=today)
     return df["Close"]
 
@@ -106,6 +106,7 @@ def send_mail(ticker, most_recent_price, strike_price, server, sender_email,
     subtitle = f"{ticker} just reached ${round(most_recent_price, 2)} which is below the strike price you set at ${strike_price}"
 
     receiver_email = "renauxlouis@gmail.com"
+    assert receiver_email.split("@")[1] == "gmail.com"
 
     msg_root = MIMEMultipart("alternative")
     msg_root["Subject"] = title
@@ -165,8 +166,7 @@ def compare_current_to_strike_prices(sender_email, sender_password):
                 df["ticker"], df["strike_price"],
                 df["strike_price_query_date"]):
             most_recent_price = stock_info.get_live_price(ticker)
-            print(ticker, strike_price, most_recent_price)
-            if most_recent_price < strike_price:
+            if most_recent_price <= strike_price:
                 create_mail_and_send(
                     ticker, strike_price, most_recent_price, tmpdirpath,
                     sender_email, sender_password, strike_price_query_date)
