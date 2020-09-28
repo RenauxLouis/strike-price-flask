@@ -17,7 +17,7 @@ from PIL import Image
 from yahoo_fin import stock_info
 
 from constants import CSV_FPATH
-from ggsheet_parser import get_df_with_dates
+from ggsheet_parser import get_df_with_dates, remove_tickers_ggsheet
 
 
 def compress_image(fpath_image):
@@ -134,11 +134,10 @@ def send_mail(ticker, most_recent_price, strike_price, server, sender_email,
     server.sendmail(sender_email, receiver_email, msg_root.as_string())
 
 
-def remove_tickers_db(tickers_to_remove, df):
+def remove_tickers_local_csv(tickers_to_remove, df):
     len_df_before_removal = len(df)
     df = df.loc[~df["ticker"].isin(tickers_to_remove)]
     assert len(df) + len(tickers_to_remove) == len_df_before_removal
-
     df.to_csv(CSV_FPATH, index=False)
 
 
@@ -173,4 +172,5 @@ def compare_current_to_strike_prices(sender_email, sender_password):
                     sender_email, sender_password, strike_price_query_date)
                 tickers_to_remove.append(ticker)
 
-    # remove_tickers_db(tickers_to_remove, df)
+    remove_tickers_local_csv(tickers_to_remove, df)
+    remove_tickers_ggsheet(tickers_to_remove)
