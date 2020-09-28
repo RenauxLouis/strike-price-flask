@@ -40,11 +40,14 @@ def is_alive():
 def read_db():
     df = pd.read_csv(CSV_FPATH, index_col=False)
 
-    df["strike_price_with_date"] = df.apply(
-        lambda row: (row["strike_price"], row[
-            "strike_price_query_date"]), axis=1)
-    df_as_dict = dict(
-        zip(df["ticker"], df["strike_price_with_date"]))
+    if not df.empty:
+        df["strike_price_with_date"] = df.apply(
+            lambda row: (row["strike_price"], row[
+                "strike_price_query_date"]), axis=1)
+        df_as_dict = dict(
+            zip(df["ticker"], df["strike_price_with_date"]))
+    else:
+        df_as_dict = {}
     return Response(json.dumps(df_as_dict), status=200,
                     mimetype="application/json")
 
