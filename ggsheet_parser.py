@@ -9,7 +9,6 @@ from constants import CSV_FPATH
 from re import sub
 from decimal import Decimal
 import numpy as np
-import sys
 
 
 ALL_TICKERS_CSV_FPATH = "all_tickers.csv"
