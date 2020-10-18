@@ -136,9 +136,7 @@ def send_mail(ticker, most_recent_price, strike_price, server, sender_email,
 
 
 def remove_tickers_local_csv(tickers_to_remove, df):
-    len_df_before_removal = len(df)
     df = df.loc[~df["ticker"].isin(tickers_to_remove)]
-    assert len(df) + len(tickers_to_remove) == len_df_before_removal
     df.to_csv(CSV_FPATH, index=False)
 
 

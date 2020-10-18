@@ -41,6 +41,22 @@ def get_ggsheet_as_df():
     return df
 
 
+def get_new_tickers_and_prices(new_df, df_existing):
+
+    existing_tickers_prices = zip(df_existing.ticker, df_existing.strike_price)
+    new_tickers_prices = zip(new_df.ticker, new_df.strike_price)
+
+    not_preexisting_tuples = [
+        ticker_price for ticker_price in new_tickers_prices if (
+            ticker_price not in existing_tickers_prices)]
+
+    print(not_preexisting_tuples)
+
+    new_tickers = [ticker for ticker, _ in not_preexisting_tuples]
+
+    return new_tickers
+
+
 def get_df_with_dates():
     new_df = get_ggsheet_as_df()
     df_existing = pd.read_csv(CSV_FPATH, index_col=False)
@@ -48,9 +64,7 @@ def get_df_with_dates():
     if new_df.empty:
         df_updated = df_existing
     else:
-        new_tickers = [
-            ticker for ticker in new_df[
-                "ticker"].values if ticker not in df_existing["ticker"].values]
+        new_tickers = get_new_tickers_and_prices(new_df, df_existing)
 
         df_new_tickers = new_df.loc[new_df["ticker"].isin(new_tickers)].copy()
         df_new_tickers["strike_price_query_date"] = str(date.today())
