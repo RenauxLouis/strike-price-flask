@@ -18,3 +18,6 @@ chmod 775 cron_job.sh
 ```
 * 9-17 * * 1-5 /Users/louisrenaux/strike-price-flask/cron_job.sh
 ```
+
+This will send an email with norification looking like:
+![Screenshot from 2023-01-27 15-52-30](https://user-images.githubusercontent.com/33155349/215195239-671bc400-2650-47f2-b478-fa97e72a096c.png)
